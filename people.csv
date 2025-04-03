@@ -1,0 +1,6 @@
+id,name,age,city,salary,is_employed,job
+1,Alice,25,New York,55000.50,True,swe
+2,Bob,30,Los Angeles,62000.75,False,engineer
+3,Charlie,22,Chicago,48000.00,True,marketing
+4,David,28,Houston,72000.25,True,surgeon
+5,Eve,35,San Francisco,51000.80,False,builder
