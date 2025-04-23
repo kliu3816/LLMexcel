@@ -3,6 +3,7 @@ import sqlite3
 import logging
 import openai
 import os
+import re
 
 def infer_sqlite_type(dtype):
     """Map pandas data types to SQLite types."""
@@ -76,19 +77,33 @@ def list_tables(db_file):
     conn.close()
     return [table[0] for table in tables]
 
+def extract_sql_from_response(response_text):
+    """Extract SQL from a mixed AI response using regex."""
+    match = re.search(r"(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|WITH)\b.*", response_text, re.IGNORECASE | re.DOTALL)
+    return match.group(0).strip() if match else response_text.strip()
+
 def generate_sql_from_prompt(prompt, schema):
     """Use an LLM to generate SQL queries based on a natural language prompt."""
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
+    openai.api_key = api_key
     if not openai.api_key:
         raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+    
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are an AI assistant that converts natural language queries into SQL."},
-            {"role": "user", "content": f"Database Schema: {schema}. User Request: {prompt}"}
+            {
+                "role": "system",
+                "content": "You are an AI that outputs only SQL queries. Return only valid SQL statements, with no explanations or comments."
+            },
+            {
+                "role": "user",
+                "content": f"Database Schema: {schema}. User Request: {prompt}"
+            }
         ]
     )
-    return response['choices'][0]['message']['content'].strip()
+    response_text = response['choices'][0]['message']['content']
+    return extract_sql_from_response(response_text)
 
 def interactive_cli():
     """Interactive CLI for user interaction."""
